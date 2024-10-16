@@ -3,13 +3,22 @@ import ballerina/http;
 import ballerina/sql;
 import ballerinax/mysql.driver as _;
 
-@http:ServiceConfig {
+// @http:ServiceConfig {
+//     cors: {
+//         allowOrigins: ["http://localhost:3000"],
+//         allowCredentials: true,
+//         allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+//         allowHeaders: ["Authorization", "content-type", "Accept", "x-jwt-assertion"]
+//         //maxAge: 84900
+//     }
+// }
+
+@http:ServiceConfig{
     cors: {
         allowOrigins: ["*"],
         allowCredentials: false,
         allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowHeaders: ["Authorization", "content-type", "Accept", "x-jwt-assertion"],
-        maxAge: 84900
+        allowHeaders: ["Authorization", "content-type", "Accept", "x-jwt-assertion"]
     }
 }
 
@@ -22,6 +31,10 @@ type Employee record {
     decimal salary;
 };
 
+type Post record {
+    string text;
+};
+
 type DatabaseConfig record {| 
     string host; 
     string user; 
@@ -30,6 +43,7 @@ type DatabaseConfig record {|
     int port; 
 |};
 
+
 // Load the database configuration from Ballerina.toml
 configurable DatabaseConfig databaseConfig = ?;
 
@@ -37,6 +51,7 @@ configurable DatabaseConfig databaseConfig = ?;
 final mysql:Client dbClient = check new (...databaseConfig);
 
 // Define the HTTP service
+
 service /employees on new http:Listener(8086) {
 
     // Get all employees
@@ -44,8 +59,6 @@ service /employees on new http:Listener(8086) {
         stream<Employee, sql:Error?> result = dbClient->query(`SELECT * FROM employees`);
         return from var employee in result select employee;
     }
-
-
 
     // Get an employee by ID
     // Update this resource to match the required path structure
@@ -71,5 +84,18 @@ service /employees on new http:Listener(8086) {
     resource function delete id(int id) returns string|error {
         _ = check dbClient->execute(`DELETE FROM employees WHERE id = ${id}`);
         return "Employee deleted successfully";
+    }
+
+    //add post
+    resource function post addPost/[int userId](Post post) returns string|error{
+        _=check dbClient->execute(`insert into posts (text,userid) values (${post.text},${userId})`);
+        return "Post added successfully!!";
+
+    }
+
+    //get post of specific user
+    resource function get posts/[int userId]() returns Post[]|error {
+        stream<Post, sql:Error?> result = dbClient->query(`SELECT * FROM posts where userid=${userId}`);
+        return from var post in result select post;
     }
 }

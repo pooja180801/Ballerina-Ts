@@ -1,14 +1,18 @@
-// App.tsx
-import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import AddPost from './AddPost';
 import EmployeeManagement from './EmployeeManagement';
+import ViewPosts from './ViewPosts';
 
-function App() {
+const App: React.FC = () => {
   return (
-    <div>
-      <h1>Test App</h1>
-      <EmployeeManagement />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<EmployeeManagement />} />
+        <Route path="/addPost/:id" element={<AddPost />} />
+        <Route path="/posts/:id" element={<ViewPosts />} />
+      </Routes>
+    </Router>
   );
-}
+};
 
 export default App;

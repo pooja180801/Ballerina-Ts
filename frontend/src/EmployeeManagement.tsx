@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import './EmployeeManagement.css'; // Import the CSS file
 
 interface Employee {
   id: number;
@@ -10,15 +12,15 @@ interface Employee {
 }
 
 const EmployeeManagement: React.FC = () => {
-  console.log("Component rendering...");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeeForm, setEmployeeForm] = useState<Omit<Employee, 'id'>>({
     name: '',
     position: '',
     department: '',
-    salary:0,
+    salary: 0,
   });
 
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [editingEmployeeId, setEditingEmployeeId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ const EmployeeManagement: React.FC = () => {
     try {
       const response = await axios.get('http://localhost:8086/employees/all');
       console.log('Fetched Employees:', response.data);
-      setEmployees(Array.isArray(response.data) ? response.data : []); // Ensure it's always an array
+      setEmployees(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching employees:', error);
       setError('Could not fetch employees. Please try again later.');
@@ -35,8 +37,7 @@ const EmployeeManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log("Helloooo");
-    fetchEmployees(); // Ensure to call this function to fetch data
+    fetchEmployees();
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -48,30 +49,27 @@ const EmployeeManagement: React.FC = () => {
     e.preventDefault();
 
     const employeeData = {
-        ...employeeForm,
-        salary: parseFloat(employeeForm.salary.toString()), // Ensure salary is a number
+      ...employeeForm,
+      salary: parseFloat(employeeForm.salary.toString()),
     };
 
     try {
-        if (isEditing && editingEmployeeId !== null) {
-            // Send the employee ID and data in the PUT request
-            await axios.put(`http://localhost:8086/employees/id`, { ...employeeData, id: editingEmployeeId });
-            setIsEditing(false);
-            setEditingEmployeeId(null);
-        } else {
-            await axios.post('http://localhost:8086/employees/employee', employeeData);
-        }
+      if (isEditing && editingEmployeeId !== null) {
+        await axios.put(`http://localhost:8086/employees/id`, { ...employeeData, id: editingEmployeeId });
+        setIsEditing(false);
+        setEditingEmployeeId(null);
+      } else {
+        await axios.post('http://localhost:8086/employees/employee', employeeData);
+      }
 
-        // Reset the form after submission
-        setEmployeeForm({ name: '', position: '', department: '', salary: 0 });
-        fetchEmployees();
-        setError(null);
+      setEmployeeForm({ name: '', position: '', department: '', salary: 0 });
+      fetchEmployees();
+      setError(null);
     } catch (error) {
-        console.error('Error during submission:', error);
-        setError('Could not add/update employee. Please check the input and try again.');
+      console.error('Error during submission:', error);
+      setError('Could not add/update employee. Please check the input and try again.');
     }
-};
-
+  };
 
   const handleEdit = (employee: Employee) => {
     setEmployeeForm({
@@ -94,11 +92,18 @@ const EmployeeManagement: React.FC = () => {
     }
   };
 
+  const addPost = async (id: number) => {
+    navigate(`/addPost/${id}`);
+  };
+
+  const viewPost = async (id: number) => {
+    navigate(`/posts/${id}`);
+  };
+
   return (
-    <div>
+    <div className="container"> {/* Add container class */}
       <h1>Employee Management</h1>
       <form onSubmit={handleSubmit}>
-        {/* No ID field, backend will auto-increment */}
         <input
           type="text"
           name="name"
@@ -131,7 +136,6 @@ const EmployeeManagement: React.FC = () => {
           onChange={handleChange}
           required
         />
-
         <button type="submit">{isEditing ? 'Update' : 'Add'} Employee</button>
       </form>
 
@@ -140,12 +144,16 @@ const EmployeeManagement: React.FC = () => {
         {(Array.isArray(employees) ? employees : []).map((employee) => (
           <li key={employee.id}>
             {employee.name} - {employee.position} - {employee.department} - ${employee.salary}
-            <button onClick={() => handleEdit(employee)}>Edit</button>
-            <button onClick={() => handleDelete(employee.id)}>Delete</button>
+            <div>
+              <button onClick={() => handleEdit(employee)}>Edit</button>
+              <button onClick={() => handleDelete(employee.id)}>Delete</button>
+              <button onClick={() => addPost(employee.id)}>Add Post</button>
+              <button onClick={() => viewPost(employee.id)}>View Posts</button>
+            </div>
           </li>
         ))}
       </ul>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className="error">{error}</p>} {/* Apply error class */}
     </div>
   );
 };
